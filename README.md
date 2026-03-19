@@ -31,6 +31,41 @@ This is especially useful for people with specific health needs or limited pantr
 
 ---
 
+## 🚀 Getting Started
+
+### Prerequisites
+
+* Python 3.8+
+* Google Gemini API key
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies: `pip install -r requirements.txt`
+3. Set up your Gemini API key in the `.env` file
+
+### Running the Application
+
+The application consists of a backend API and a frontend:
+
+**Backend (API Server):**
+```bash
+# From the backend directory
+cd backend
+uvicorn main:app --reload
+```
+
+**Frontend (Streamlit UI):**
+```bash
+# From the frontend directory
+cd frontend
+streamlit run app.py
+```
+
+*Note: Make sure the backend API server is running before using the frontend.*
+
+---
+
 ## 🧠 How Core AI Concepts Are Used
 
 ### 1. 🗣️ Prompting

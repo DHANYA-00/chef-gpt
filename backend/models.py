@@ -1,8 +1,8 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Union
 
 class RecipeRequest(BaseModel):
-    ingredients: List[str]
+    ingredients: Union[List[str], str]
     diet: Optional[str] = None
     calories: Optional[int] = None
 

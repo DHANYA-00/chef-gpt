@@ -1,15 +1,22 @@
-import google.generativeai as genai
+import openai
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # Get API key from .env
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("XAI_API_KEY")
 if not api_key:
-    raise ValueError("GEMINI_API_KEY not found in .env file")
+    raise ValueError("XAI_API_KEY not found in .env file")
 
-genai.configure(api_key=api_key)
+# Configure model and OpenAI client
+# Use Grok model; override with XAI_MODEL in .env if needed.
+model_name = os.getenv("XAI_MODEL", "grok-beta")
+
+client = openai.OpenAI(
+    api_key=api_key,
+    base_url="https://api.x.ai/v1"
+)
 
 system_prompt = """
 You are Chef-GPT, a professional recipe assistant.
@@ -18,11 +25,17 @@ You are Chef-GPT, a professional recipe assistant.
 - If calories or diet preferences are given, adapt the recipe accordingly.
 """
 
-def fetch_recipe(ingredients: str, diet: str = None, calories: int = None):
+def fetch_recipe(ingredients, diet: str = None, calories: int = None):
+    
+    # Handle both string and list inputs for ingredients
+    if isinstance(ingredients, list):
+        ingredients_str = ", ".join(ingredients)
+    else:
+        ingredients_str = str(ingredients)
     
     user_prompt = f"""
     Think step by step about how to combine these ingredients into a recipe.
-    Ingredients: {ingredients}.
+    Ingredients: {ingredients_str}.
     {f'The recipe should be suitable for a {diet} diet.' if diet else ''}
     {f'Try to keep it under {calories} calories.' if calories else ''}
 
@@ -32,13 +45,14 @@ def fetch_recipe(ingredients: str, diet: str = None, calories: int = None):
 
     final_prompt = f"{system_prompt.strip()}\n\n{user_prompt.strip()}"
 
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    response = model.generate_content(
-        final_prompt,
-        generation_config={
-            "temperature": 0.7,  # creativity control
-            "top_p": 0.9,        # nucleus sampling
-            "top_k": 30          # limits candidate tokens
-        }
+    response = client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        temperature=0.7,
+        top_p=0.9,
+        max_tokens=1000
     )
-    return response.text.strip()
+    return response.choices[0].message.content.strip()
