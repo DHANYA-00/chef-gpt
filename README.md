@@ -36,13 +36,13 @@ This is especially useful for people with specific health needs or limited pantr
 ### Prerequisites
 
 * Python 3.8+
-* Google Gemini API key
+* Groq API key
 
 ### Installation
 
 1. Clone the repository
 2. Install dependencies: `pip install -r requirements.txt`
-3. Set up your Gemini API key in the `.env` file
+3. Set up your Groq API key in the `.env` file
 
 ### Running the Application
 
