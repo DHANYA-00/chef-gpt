@@ -3,3 +3,4 @@ uvicorn
 streamlit
 python-dotenv
 openai  # Gemini API uses same client
+requests

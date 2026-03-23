@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-import json
 from datetime import datetime
 
 # Set page configuration
@@ -49,13 +48,9 @@ with col1:
     diet_options = ["None", "Vegan", "Vegetarian", "Keto", "Low-Carb", "High-Protein", "Gluten-Free", "Dairy-Free"]
     diet = st.selectbox("🥗 Dietary Preference (Optional)", diet_options)
     
-    calories = st.number_input(
-        "🔥 Calorie Limit (Optional)", 
-        min_value=100, 
-        max_value=5000, 
-        value=None, 
-        step=50,
-        placeholder="Enter calorie limit"
+    calories_input = st.text_input(
+        "🔥 Calorie Limit (Optional)",
+        placeholder="e.g., 450"
     )
 
 with col2:
@@ -77,6 +72,8 @@ with col2:
 if generate_btn:
     if not ingredients.strip():
         st.error("⚠️ Please enter at least one ingredient!")
+    elif calories_input.strip() and not calories_input.strip().isdigit():
+        st.error("⚠️ Calorie limit must be a whole number.")
     else:
         with st.spinner("👨‍🍳 Cooking up your personalized recipe..."):
             try:
@@ -89,7 +86,7 @@ if generate_btn:
                 payload = {
                     "ingredients": ingredients_list,
                     "diet": diet if diet != "None" else None,
-                    "calories": int(calories) if calories else None
+                    "calories": int(calories_input) if calories_input.strip() else None
                 }
                 
                 # Make request to the backend
@@ -132,4 +129,4 @@ if generate_btn:
 
 # Footer
 st.markdown("---")
-st.markdown("*👨‍🍳 Powered by Chef-GPT - AI Recipe Assistant | Made with ❤️ using Streamlit & Google Gemini*")
+st.markdown("*👨‍🍳 Powered by Chef-GPT - AI Recipe Assistant | Made with ❤️ using Streamlit & Groq*")
