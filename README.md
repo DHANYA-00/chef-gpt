@@ -2,8 +2,7 @@
 
 Chef-GPT is an AI cooking assistant that turns the ingredients you already have into practical, personalized recipes and guides you through cooking them step by step.
 
-**Live:** https://chef-gpt-swart.vercel.app/
-**GitHub:** https://github.com/DHANYA-00/chef-gpt
+**Live:** https://chef-gpt-swart.vercel.app
 
 ## Features
 
