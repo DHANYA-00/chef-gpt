@@ -1,93 +1,156 @@
-import openai
 import os
+
 from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 
-# Read provider + keys from .env.
-# We keep backwards compatibility with older env var names (GEMINI_API_KEY/XAI_API_KEY).
-provider = os.getenv("LLM_PROVIDER", "groq").strip().lower()
 
-if provider == "xai":
-    api_key = os.getenv("XAI_API_KEY")
-    if not api_key:
-        raise ValueError("Missing XAI_API_KEY in .env (LLM_PROVIDER=xai).")
-    model_name = os.getenv("XAI_MODEL", "grok-2")
-    client = openai.OpenAI(api_key=api_key, base_url="https://api.x.ai/v1")
-elif provider == "groq":
-    api_key = os.getenv("GROQ_API_KEY") or os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("Missing GROQ_API_KEY in .env (LLM_PROVIDER=groq).")
-    model_name = os.getenv("GROQ_MODEL", "llama3-70b-8192")
-    # Groq provides an OpenAI-compatible API.
-    client = openai.OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
-else:
-    # Google Gemini OpenAI-compatible endpoint (legacy).
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("Missing GEMINI_API_KEY in .env.")
-    model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-    client = openai.OpenAI(
-        api_key=api_key,
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-    )
+# -----------------------------
+# Groq configuration
+# -----------------------------
 
-system_prompt = """
-You are Chef-GPT, a professional recipe assistant.
-- Always provide clear, step-by-step instructions.
-- Ensure the recipe is simple, creative, and beginner-friendly.
-- If calories or diet preferences are given, adapt the recipe accordingly.
+api_key = os.getenv("GROQ_API_KEY")
+
+if not api_key:
+    raise ValueError("Missing GROQ_API_KEY in environment variables.")
+
+client = OpenAI(
+    api_key=api_key,
+    base_url="https://api.groq.com/openai/v1"
+)
+
+MODEL_NAME = "openai/gpt-oss-120b"
+
+
+# -----------------------------
+# System prompt
+# -----------------------------
+
+SYSTEM_PROMPT = """
+You are Chef-GPT, a strict recipe assistant.
+
+Create simple, practical, beginner-friendly recipes using ONLY the ingredients provided by the user.
+
+STRICT RULES:
+- Never invent, assume, or add ingredients not provided by the user.
+- Do not assume pantry basics such as oil, salt, pepper, garlic, onion, spices, etc.
+- Every ingredient in the recipe MUST be from the user's ingredient list.
+- Every cooking step must use only the provided ingredients.
+- Follow the requested diet and calorie limit.
+- If the ingredients cannot make a suitable recipe, clearly say so instead of inventing ingredients.
+- Do not claim exact calories unless reasonably calculable.
+- Do not provide reasoning or chain-of-thought.
+- Return only the final recipe.
 """
 
-def _fallback_recipe(ingredients_str: str, diet: str = None, calories: int = None) -> str:
-    title = "Quick Pantry Skillet"
+
+# -----------------------------
+# Fallback recipe
+# -----------------------------
+
+def _fallback_recipe(
+    ingredients_str: str,
+    diet: str = None,
+    calories: int = None
+) -> str:
+
     diet_line = f"- Diet target: {diet}\n" if diet else ""
-    calories_line = f"- Calorie target: under {calories}\n" if calories else ""
+    calories_line = (
+        f"- Calorie target: under {calories}\n"
+        if calories
+        else ""
+    )
+
     return (
-        f"## {title}\n\n"
-        "AI service is temporarily unavailable, so here is a reliable fallback recipe.\n\n"
-        f"### Ingredients\n- {ingredients_str}\n- 1 tbsp oil\n- Salt and pepper to taste\n\n"
+        "## Quick Pantry Recipe\n\n"
+        "AI service is temporarily unavailable, "
+        "so here is a simple fallback recipe.\n\n"
+        "### Ingredients\n"
+        f"- {ingredients_str}\n"
+        "- 1 tbsp oil\n"
+        "- Salt and pepper to taste\n\n"
         "### Steps\n"
-        "1. Prep and chop all ingredients into bite-sized pieces.\n"
+        "1. Prepare and chop the ingredients.\n"
         "2. Heat oil in a pan over medium heat.\n"
-        "3. Add firm ingredients first and cook for 4-6 minutes.\n"
-        "4. Add soft ingredients and season well.\n"
-        "5. Cook until tender and serve warm.\n\n"
+        "3. Add the main ingredients and cook until tender.\n"
+        "4. Add salt and pepper and mix well.\n"
+        "5. Cook thoroughly and serve warm.\n\n"
         "### Notes\n"
         f"{diet_line}"
         f"{calories_line}"
-        "- Add herbs, lemon, or chili flakes for extra flavor.\n"
+        "- Add herbs, lemon or chili flakes for extra flavor.\n"
     )
 
-def fetch_recipe(ingredients, diet: str = None, calories: int = None):
-    
-    # Handle both string and list inputs for ingredients
+
+# -----------------------------
+# Generate recipe
+# -----------------------------
+
+def fetch_recipe(
+    ingredients,
+    diet: str = None,
+    calories: int = None
+):
+    # Handle both list and string inputs
     if isinstance(ingredients, list):
         ingredients_str = ", ".join(ingredients)
     else:
         ingredients_str = str(ingredients)
-    
-    user_prompt = f"""
-    Think step by step about how to combine these ingredients into a recipe.
-    Ingredients: {ingredients_str}.
-    {f'The recipe should be suitable for a {diet} diet.' if diet else ''}
-    {f'Try to keep it under {calories} calories.' if calories else ''}
 
-    First, explain your reasoning briefly.
-    Then, provide the final recipe in a structured format.
-    """
+    user_prompt = f"""
+Create a recipe using these ingredients:
+
+Ingredients: {ingredients_str}
+
+Diet preference:
+{diet if diet else "No specific diet"}
+
+Calorie target:
+{calories if calories else "No specific calorie target"}
+
+Return the recipe using this structure:
+
+## Recipe Name
+
+### Ingredients
+- ingredient 1
+- ingredient 2
+
+### Steps
+1. Step one
+2. Step two
+3. Step three
+
+### Notes
+- Useful tips
+- Nutrition/diet considerations if relevant
+"""
 
     try:
         response = client.chat.completions.create(
-            model=model_name,
+            model=MODEL_NAME,
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {
+                    "role": "system",
+                    "content": SYSTEM_PROMPT
+                },
+                {
+                    "role": "user",
+                    "content": user_prompt
+                }
             ],
             temperature=0.7,
-            top_p=0.9,
             max_tokens=1000
         )
+
         return response.choices[0].message.content.strip()
-    except Exception:
-        return _fallback_recipe(ingredients_str, diet, calories)
+
+    except Exception as e:
+        print("GROQ ERROR:", repr(e))
+
+        return _fallback_recipe(
+            ingredients_str,
+            diet,
+            calories
+        )
