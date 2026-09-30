@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #f6e9d7;
+  --color-cream-50: #fbf4ea;
+  --color-peach: #f9ead6;
+  --color-sand: #ebe0d2;
+  --color-line: #e3d2ba;
+  --color-navy: #2c2a55;
+  --color-navy-soft: #3d3b6e;
+  --color-navy-card: #363463;
+  --color-muted: #6b6672;
+  --color-coral: #e8735a;
+  --color-rust: #b8422b;
+  --color-teal: #4ba394;
+  --color-teal-ink: #0f2f2a;
+  --color-gold: #e6b86a;
+}
+
+@theme inline {
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-playfair), Georgia, serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
+}
+
+@utility label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+@utility label-sm {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  line-height: 0.875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* The stacked "second card" peeking under the dark panel */
+@utility panel-shadow {
+  box-shadow:
+    0 12px 0 -4px #e2cdb8,
+    0 30px 40px -18px rgb(44 42 85 / 0.45);
+}
+
+/* Fine dot texture on the dark panel */
+@utility dot-texture {
+  background-image: radial-gradient(
+    rgb(246 233 215 / 0.07) 1px,
+    transparent 1px
+  );
+  background-size: 7px 7px;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-navy);
+}
+
+::selection {
+  background: var(--color-coral);
+  color: var(--color-navy);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-navy);
+  outline-offset: 2px;
+}
+
+@media print {
+  @page {
+    margin: 16mm;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+}

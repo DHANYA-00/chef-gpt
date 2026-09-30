@@ -1,41 +1,50 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from models import RecipeRequest
-from gemini_service import fetch_recipe
 
-app = FastAPI(title="Chef-GPT API")
-
-# CORS (still there in case you ever connect a frontend)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+import groq_service as svc
+from schemas import (
+    GenerateRequest,
+    GenerateResponse,
+    ModifyRequest,
+    ModifyResponse,
+    RescueRequest,
+    RescueResponse,
+    SubstituteRequest,
+    SubstituteResponse,
 )
 
-@app.post("/api/recipes")
-async def get_recipe(request: RecipeRequest):
-    if not request.ingredients:
-        raise HTTPException(status_code=400, detail="Ingredients required")
+app = FastAPI(title="Chef-GPT API", version="2.0.0")
 
+
+def _run(fn, req):
     try:
-        recipe = fetch_recipe(
-            ingredients=request.ingredients,
-            diet=request.diet,
-            calories=request.calories
+        return fn(req)
+    except svc.LLMError:
+        raise HTTPException(
+            status_code=503,
+            detail="Chef-GPT could not produce a reliable answer right now. Please try again.",
         )
-        return {"recipe": recipe}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
-# -------- CLI MODE --------
-if __name__ == "__main__":
-    print("Chef-GPT Terminal Mode")
-    ingredients = input("Enter ingredients (comma separated): ")
-    diet = input("Enter diet preference (press Enter to skip): ") or None
-    calories_input = input("Enter calorie limit (press Enter to skip): ")
-    calories = int(calories_input) if calories_input else None
 
-    recipe = fetch_recipe(ingredients, diet, calories)
-    print("\n--- Generated Recipe ---\n")
-    print(recipe)
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.post("/api/recipes/generate", response_model=GenerateResponse)
+def generate(req: GenerateRequest):
+    return _run(svc.generate_recipes, req)
+
+
+@app.post("/api/recipes/modify", response_model=ModifyResponse)
+def modify(req: ModifyRequest):
+    return _run(svc.modify_recipe, req)
+
+
+@app.post("/api/recipes/substitute", response_model=SubstituteResponse)
+def substitute(req: SubstituteRequest):
+    return _run(svc.substitute_ingredient, req)
+
+
+@app.post("/api/recipes/rescue", response_model=RescueResponse)
+def rescue(req: RescueRequest):
+    return _run(svc.rescue_meal, req)
