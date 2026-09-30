@@ -1,131 +1,148 @@
-# 👨‍🍳 Chef-GPT
+# Chef-GPT
 
-**Chef-GPT** is an AI-powered recipe assistant that helps users discover meals using the ingredients they already have.
+Chef-GPT is an AI cooking assistant that turns the ingredients you already have into practical, personalized recipes and guides you through cooking them step by step.
 
-It generates personalized recipes based on **available ingredients, dietary preferences, and calorie goals**, making everyday meal planning easier.
+**Live:** https://chef-gpt-swart.vercel.app/
+**GitHub:** https://github.com/DHANYA-00/chef-gpt
 
----
+## Features
 
-## ✨ Features
+* **Smart recipe generation** — Uses ingredients, goal, time, hunger, diet, calories, and ingredient-usage preference to generate up to 3 recipes with a recommendation.
+* **Recipe adaptation** — Make recipes faster, healthier, spicier, cheaper, easier, more filling, or higher in protein.
+* **Ingredient substitution** — Remove unavailable ingredients and automatically adjust the recipe when possible.
+* **Cooking mode** — Step-by-step instructions with progress tracking and built-in timers.
+* **Meal rescue** — Get recovery steps for issues such as excess salt, spice, water, or undercooking.
+* **Recipe export** — Download recipes as `.txt` or save them as PDF.
+* **Honest responses** — Rejects recipes that require unavailable ingredients instead of inventing them.
+* **No accounts or database** — Recipes are handled in browser memory.
 
-* 🥕 **Ingredient-Based Recipes** – Enter the ingredients you have and get recipe suggestions.
-* 🥗 **Dietary Preferences** – Customize recipes for vegan, keto, low-carb, high-protein, and more.
-* 🔢 **Calorie Goals** – Generate recipes based on a target calorie limit.
-* 📋 **Structured Recipes** – Get ingredients, instructions, calories, and preparation time in a clear format.
-* 🔄 **Smart Substitutions** – Suggest alternatives when an ingredient is unavailable.
-* 🤖 **AI-Powered Suggestions** – Uses LLMs to generate personalized cooking recommendations.
-
----
-
-## 🧠 AI Concepts
-
-Chef-GPT demonstrates several practical AI engineering concepts:
-
-* **Prompt Engineering** – Guides the LLM to generate useful and consistent recipes.
-* **Function Calling** – Connects AI responses with backend functions for specific tasks.
-* **Structured Output** – Returns recipes in a predictable JSON format.
-* **RAG** – Retrieves relevant recipes, substitutions, and cooking information before generating responses.
-
----
-
-## 🔄 How It Works
+## How It Works
 
 ```text
-User Ingredients
-       │
-       ▼
-Diet + Calorie Preferences
-       │
-       ▼
-AI Processing
-       │
-       ├── Prompt Engineering
-       ├── Function Calling
-       └── RAG Retrieval
-       │
-       ▼
-Personalized Recipe
-       │
-       ▼
-Ingredients + Steps + Nutrition
+User preferences + ingredients
+            ↓
+     Next.js Frontend
+            ↓
+   Next.js API Proxy
+            ↓
+      FastAPI Backend
+            ↓
+ ┌──────────┼───────────┐
+ Prompting  Validation  JSON Parsing
+ └──────────┼───────────┘
+            ↓
+        Groq LLM
 ```
 
----
+The backend validates model output with **Pydantic** and checks returned ingredients against the user's available ingredients. Recipe modifications, substitutions, and rescue requests use the current recipe as context.
 
-## 🛠️ Tech Stack
+## AI Concepts
 
-### 🤖 AI
+* **Prompt Engineering** — Separate system and task prompts control recipe generation and modifications.
+* **Structured Output** — Recipes are returned as validated JSON containing ingredients, steps, timers, tags, and notes.
+* **Output Validation & Retry** — Invalid or invented ingredients are rejected and regenerated.
+* **Prompt-Injection Awareness** — User input is treated as data rather than model instructions.
+* **No RAG or Function Calling** — The current version relies on prompt engineering and structured LLM output.
 
-* Groq API
-* Large Language Models
-* Prompt Engineering
-* Function Calling
-* RAG
+## Tech Stack
 
-### 🖥️ Backend
+**Frontend:** Next.js, TypeScript, Tailwind CSS, lucide-react
+**Backend:** Python, FastAPI, Uvicorn, Pydantic
+**AI:** Groq API, `openai/gpt-oss-120b`
 
-* Python
-* FastAPI
-* Uvicorn
+## API
 
-### 🎨 Frontend
+| Method | Endpoint                  | Purpose                    |
+| ------ | ------------------------- | -------------------------- |
+| GET    | `/health`                 | Health check               |
+| POST   | `/api/recipes/generate`   | Generate up to 3 recipes   |
+| POST   | `/api/recipes/modify`     | Modify the current recipe  |
+| POST   | `/api/recipes/substitute` | Handle missing ingredients |
+| POST   | `/api/recipes/rescue`     | Recover a cooking problem  |
 
-* Streamlit
+Interactive API docs are available at `/docs`.
 
----
+## Project Structure
 
-## 💡 Example
+```text
+chef-gpt/
+├── backend/
+│   ├── main.py
+│   ├── groq_service.py
+│   ├── schemas.py
+│   └── requirements.txt
+│
+└── frontend/
+    ├── app/
+    │   ├── api/recipes/[action]/route.ts
+    │   ├── layout.tsx
+    │   └── page.tsx
+    ├── components/
+    └── lib/
+```
 
-**Input:**
+## Getting Started
 
-> I have tofu, spinach, and rice. I want something vegan under 400 calories.
-
-**Chef-GPT:**
-
-> **Vegan Spinach-Tofu Rice Bowl**
-> Provides ingredients, preparation steps, estimated calories, and suitable substitutions.
-
----
-
-## ⚙️ Getting Started
-
-### 1. Clone the Repository
+### 1. Clone
 
 ```bash
 git clone <repository-url>
 cd chef-gpt
 ```
 
-### 2. Install Dependencies
+### 2. Backend
 
 ```bash
+cd backend
 pip install -r requirements.txt
 ```
 
-### 3. Add API Key
-
-Create a `.env` file and add:
+Create `.env`:
 
 ```env
 GROQ_API_KEY=your_api_key
 ```
 
-### 4. Start Backend
+Run:
 
 ```bash
-cd backend
 uvicorn main:app --reload
 ```
 
-### 5. Start Frontend
-
-Open another terminal:
+### 3. Frontend
 
 ```bash
 cd frontend
-streamlit run app.py
+npm install
 ```
 
----
+Create `.env.local`:
 
-🔥 *Chef-GPT turns the ingredients in your kitchen into your next meal.*
+```env
+BACKEND_URL=http://localhost:8000
+```
+
+Run:
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+## Deployment
+
+* **Backend:** Deploy the `backend` folder to Render or another Python host.
+* **Frontend:** Deploy the `frontend` folder to Vercel.
+* Set `GROQ_API_KEY` on the backend and `BACKEND_URL` on the frontend.
+
+## Limitations
+
+* No database or user accounts; refreshing clears the current recipe.
+* Free hosting may have cold-start delays.
+* Each modification, substitution, or rescue uses an additional LLM call.
+* Nutrition values are estimates.
+* Recipes use only listed ingredients plus water.
+* Cooking rescue guidance is informational; follow appropriate food-safety practices.
+
+> **Chef-GPT turns the ingredients in your kitchen into your next meal.**
